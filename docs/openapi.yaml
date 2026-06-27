@@ -1,0 +1,393 @@
+openapi: 3.0.3
+info:
+  title: Kafka REST API
+  description: >
+    A production-grade HTTP gateway for Apache Kafka. Publish and consume
+    messages over plain REST — no Kafka client required.
+
+
+    Data-plane routes (`/topics/**`) may be protected by JWT bearer auth when
+    `KRA_AUTH_ENABLED=true`; `/health`, `/ready`, `/metrics`, and the docs are
+    always open.
+  version: "1.0.0"
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Local development
+
+tags:
+  - name: Health
+    description: Liveness, readiness, and metrics
+  - name: Topics
+    description: Topic discovery and metadata
+  - name: Messages
+    description: Publishing and consuming records
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Liveness probe
+      description: Reports whether the process is up. Always 200 while serving; does not probe Kafka.
+      responses:
+        "200":
+          description: Process is alive
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HealthResponse" }
+
+  /ready:
+    get:
+      tags: [Health]
+      summary: Readiness probe
+      description: Probes Kafka connectivity. Returns 503 when a dependency is unavailable.
+      responses:
+        "200":
+          description: All dependencies healthy
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HealthResponse" }
+        "503":
+          description: A dependency is unavailable
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HealthResponse" }
+
+  /metrics:
+    get:
+      tags: [Health]
+      summary: Prometheus metrics
+      responses:
+        "200":
+          description: Metrics in Prometheus text exposition format
+          content:
+            text/plain:
+              schema: { type: string }
+
+  /topics:
+    get:
+      tags: [Topics]
+      summary: List topics
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Topic names
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TopicList" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "502": { $ref: "#/components/responses/KafkaError" }
+
+  /topics/{topic}:
+    get:
+      tags: [Topics]
+      summary: Topic metadata
+      description: Partitions, replication factor, and low/high watermarks.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Topic"
+      responses:
+        "200":
+          description: Topic metadata
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TopicMetadata" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "502": { $ref: "#/components/responses/KafkaError" }
+
+  /topics/{topic}/consume:
+    get:
+      tags: [Messages]
+      summary: Consume messages
+      description: >
+        Reads a bounded set of messages from a single partition. A timeout
+        reached while waiting for more messages is not an error — whatever was
+        read so far is returned.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Topic"
+        - name: partition
+          in: query
+          schema: { type: integer, default: 0, minimum: 0 }
+        - name: offset
+          in: query
+          description: "'earliest', 'latest', or a non-negative absolute offset."
+          schema: { type: string, default: earliest }
+        - name: from_timestamp
+          in: query
+          description: >
+            Start at the first offset whose timestamp is >= this value
+            (RFC3339 or Unix seconds). Overrides `offset` — enables time-based replay.
+          schema: { type: string, example: "2026-06-26T12:00:00Z" }
+        - name: limit
+          in: query
+          description: Maximum number of messages to scan.
+          schema: { type: integer, minimum: 1 }
+        - name: timeout
+          in: query
+          description: Long-poll budget as a Go duration (e.g. 5s).
+          schema: { type: string, example: 5s }
+        - name: key
+          in: query
+          description: Keep only messages whose key exactly equals this value.
+          schema: { type: string }
+        - name: header
+          in: query
+          description: >
+            Repeatable. Keep only messages carrying all given headers, each in
+            `name:value` form.
+          schema: { type: array, items: { type: string } }
+          example: ["source:web"]
+        - name: since
+          in: query
+          description: Keep only messages with timestamp >= this (RFC3339 or Unix seconds).
+          schema: { type: string }
+        - name: until
+          in: query
+          description: Keep only messages with timestamp <= this (RFC3339 or Unix seconds).
+          schema: { type: string }
+      responses:
+        "200":
+          description: Consumed messages
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ConsumeResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /topics/{topic}/publish:
+    post:
+      tags: [Messages]
+      summary: Publish a single message
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Topic"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PublishRequest" }
+            example:
+              key: "123"
+              value: { amount: 42, currency: USD }
+              headers: { source: checkout }
+      responses:
+        "200":
+          description: Published
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PublishResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "502": { $ref: "#/components/responses/KafkaError" }
+        "504": { $ref: "#/components/responses/Timeout" }
+
+  /topics/{topic}/publish/batch:
+    post:
+      tags: [Messages]
+      summary: Publish a batch of messages
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Topic"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BatchPublishRequest" }
+            example:
+              messages:
+                - { key: "a", value: { n: 1 } }
+                - { key: "b", value: { n: 2 } }
+      responses:
+        "200":
+          description: Published
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PublishResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "502": { $ref: "#/components/responses/KafkaError" }
+        "504": { $ref: "#/components/responses/Timeout" }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        Enforced only when KRA_AUTH_ENABLED=true. Send `Authorization: Bearer <token>`.
+
+  parameters:
+    Topic:
+      name: topic
+      in: path
+      required: true
+      schema: { type: string }
+      example: orders
+
+  responses:
+    BadRequest:
+      description: Malformed request
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    Unauthorized:
+      description: Missing, invalid, or expired token
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    NotFound:
+      description: Topic not found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    KafkaError:
+      description: Upstream Kafka failure
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    Timeout:
+      description: Request deadline exceeded
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code: { type: string, example: topic_not_found }
+            message: { type: string }
+          required: [code, message]
+      required: [error]
+
+    PublishRequest:
+      type: object
+      properties:
+        key: { type: string, description: "Optional partition key." }
+        value:
+          description: >
+            The message payload. Interpreted according to value_encoding:
+            a JSON document (json), a JSON string published as raw UTF-8
+            (string), or a base64 JSON string decoded to raw bytes (base64).
+        value_encoding:
+          type: string
+          enum: [json, string, base64]
+          default: json
+          description: "How `value` is interpreted before publishing."
+        headers:
+          type: object
+          additionalProperties: { type: string }
+      required: [value]
+
+    BatchPublishRequest:
+      type: object
+      properties:
+        messages:
+          type: array
+          items: { $ref: "#/components/schemas/PublishRequest" }
+      required: [messages]
+
+    PublishResponse:
+      type: object
+      properties:
+        topic: { type: string }
+        published: { type: integer, example: 1 }
+        offsets:
+          type: array
+          description: >
+            Per-record (partition, offset) in input order. Present only when the
+            server runs in the "sync" produce mode (KRA_KAFKA_PRODUCE_MODE=sync);
+            omitted in the default "batched" mode.
+          items:
+            type: object
+            properties:
+              partition: { type: integer }
+              offset: { type: integer, format: int64 }
+
+    ConsumedMessage:
+      type: object
+      properties:
+        partition: { type: integer }
+        offset: { type: integer, format: int64 }
+        key: { type: string }
+        key_encoding: { type: string, enum: [utf8, base64] }
+        value: { description: "JSON when value_encoding is 'json', else a base64 string." }
+        value_encoding: { type: string, enum: [json, base64] }
+        headers:
+          type: object
+          additionalProperties: { type: string }
+        timestamp: { type: string, format: date-time }
+
+    ConsumeResponse:
+      type: object
+      properties:
+        topic: { type: string }
+        partition: { type: integer }
+        count: { type: integer, description: "Number of messages returned (after filtering)." }
+        scanned: { type: integer, description: "Number of messages scanned before filtering." }
+        messages:
+          type: array
+          items: { $ref: "#/components/schemas/ConsumedMessage" }
+
+    TopicList:
+      type: object
+      properties:
+        topics:
+          type: array
+          items: { type: string }
+        count: { type: integer }
+
+    PartitionMetadata:
+      type: object
+      properties:
+        id: { type: integer }
+        leader: { type: integer }
+        replicas:
+          type: array
+          items: { type: integer }
+        isr:
+          type: array
+          items: { type: integer }
+        low_watermark: { type: integer, format: int64 }
+        high_watermark: { type: integer, format: int64 }
+
+    TopicMetadata:
+      type: object
+      properties:
+        name: { type: string }
+        replication_factor: { type: integer }
+        partitions:
+          type: array
+          items: { $ref: "#/components/schemas/PartitionMetadata" }
+
+    HealthResponse:
+      type: object
+      properties:
+        status: { type: string, example: ok }
+        version: { type: string }
+        uptime_seconds: { type: number, format: double }
+        checks:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              status: { type: string, enum: [ok, failed] }
+              error: { type: string }

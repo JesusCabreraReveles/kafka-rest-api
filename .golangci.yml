@@ -1,0 +1,43 @@
+# golangci-lint configuration.
+# Docs: https://golangci-lint.run/usage/configuration/
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  enable:
+    - errcheck       # unchecked errors
+    - govet          # suspicious constructs
+    - ineffassign    # unused assignments
+    - staticcheck    # static analysis suite
+    - unused         # unused code
+    - errorlint      # correct error wrapping (%w, errors.Is/As)
+    - bodyclose      # http response bodies are closed
+    - gocritic       # opinionated checks
+    - gocyclo        # cyclomatic complexity
+    - goconst        # repeated strings that should be constants
+    - misspell       # spelling
+    - revive         # golint replacement
+    - unconvert      # unnecessary conversions
+    - whitespace     # leading/trailing whitespace
+    - nolintlint     # well-formed nolint directives
+
+linters-settings:
+  gocyclo:
+    min-complexity: 15
+  misspell:
+    locale: US
+  revive:
+    rules:
+      - name: exported
+        disabled: false
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  exclude-rules:
+    # Test files may be a little more relaxed.
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - goconst
