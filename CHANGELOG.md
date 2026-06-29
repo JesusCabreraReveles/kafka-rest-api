@@ -7,12 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-06-29
+
 ### Added
 - `## Install` and `## Testing` sections in the README.
 - `SECURITY.md` with a coordinated vulnerability disclosure policy.
 - Dependabot configuration (`gomod`, `github-actions`, `docker`).
 - Community health files: `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, issue and
   pull-request templates, and `CODEOWNERS`.
+- Self-hosted test-coverage badge published from CI to the `badges` branch, plus
+  a release badge in the README.
 
 ### Changed
 - Test JWT signing key is now generated at init time instead of a hardcoded
@@ -52,5 +56,6 @@ Apache Kafka.
 - Clean-architecture Go layout, structured logging, graceful shutdown,
   multi-stage distroless Docker image, docker-compose stack, CI, and Makefile.
 
-[Unreleased]: https://github.com/JesusCabreraReveles/kafka-rest-api/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/JesusCabreraReveles/kafka-rest-api/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/JesusCabreraReveles/kafka-rest-api/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/JesusCabreraReveles/kafka-rest-api/releases/tag/v1.0.0
