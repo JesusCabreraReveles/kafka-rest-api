@@ -99,12 +99,26 @@ kafka-rest-api/
 
 ---
 
-## Quick start
+## Install
 
 ### Prerequisites
 
 - Go **1.25+**
 - Docker & Docker Compose (for the full stack)
+
+```bash
+# Option A — build from source
+git clone https://github.com/JesusCabreraReveles/kafka-rest-api.git
+cd kafka-rest-api
+make build          # produces ./bin/kafka-rest-api
+
+# Option B — install the binary into $GOBIN
+go install github.com/JesusCabreraReveles/kafka-rest-api/cmd/server@latest
+```
+
+---
+
+## Quick start
 
 ### Run locally
 
@@ -452,6 +466,25 @@ Notable trade-offs are captured as ADRs in [`docs/adr/`](docs/adr/):
 - [ADR 0002 — Health endpoints split & metric cardinality](docs/adr/0002-health-endpoints-and-metric-cardinality.md)
 - [ADR 0003 — JWT signing strategy & Kafka security verification](docs/adr/0003-jwt-signing-and-security-verification.md)
 - [ADR 0004 — Avro & Schema Registry integration (deferred)](docs/adr/0004-avro-and-schema-registry.md)
+
+---
+
+## Testing
+
+The suite is table-driven and runs with the race detector. Run it directly or
+through the quality gate:
+
+```bash
+make test                 # go test -race -count=1 ./...
+make cover                # run tests + open an HTML coverage report
+make check                # fmt + vet + lint + test (the full gate)
+
+# Or without make:
+go test -race ./...
+```
+
+CI runs the same `go test -race` suite, golangci-lint, and a Docker build on
+every push and pull request.
 
 ---
 
