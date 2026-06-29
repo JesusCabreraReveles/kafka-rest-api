@@ -5,6 +5,8 @@
 > language-specific tooling required.
 
 [![CI](https://github.com/JesusCabreraReveles/kafka-rest-api/actions/workflows/ci.yml/badge.svg)](https://github.com/JesusCabreraReveles/kafka-rest-api/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/JesusCabreraReveles/kafka-rest-api/badges/coverage.json)](https://github.com/JesusCabreraReveles/kafka-rest-api/actions/workflows/coverage.yml)
+[![Release](https://img.shields.io/github/v/release/JesusCabreraReveles/kafka-rest-api?logo=github)](https://github.com/JesusCabreraReveles/kafka-rest-api/releases/latest)
 ![Go](https://img.shields.io/badge/go-1.25%2B-00ADD8?logo=go)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 

@@ -1,0 +1,55 @@
+name: Coverage
+
+# Publishes a self-hosted coverage badge: runs the test suite with coverage,
+# computes the total, and writes a shields.io endpoint JSON to the orphan
+# `badges` branch. The README badge reads that JSON — no external account or
+# token required. Runs only on master so badges reflect merged code.
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: write
+
+jobs:
+  coverage:
+    name: Coverage badge
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.25"
+          check-latest: true
+          cache: true
+
+      - name: Run tests with coverage
+        run: go test -covermode=atomic -coverprofile=coverage.out ./...
+
+      - name: Build badge JSON
+        run: |
+          pct=$(go tool cover -func=coverage.out | awk '/^total:/ {gsub("%","",$3); print $3}')
+          echo "Total coverage: ${pct}%"
+          int=${pct%.*}
+          if   [ "$int" -ge 90 ]; then color=brightgreen
+          elif [ "$int" -ge 80 ]; then color=green
+          elif [ "$int" -ge 70 ]; then color=yellowgreen
+          elif [ "$int" -ge 60 ]; then color=yellow
+          elif [ "$int" -ge 50 ]; then color=orange
+          else color=red
+          fi
+          mkdir -p badge-out
+          printf '{"schemaVersion":1,"label":"coverage","message":"%s%%","color":"%s"}\n' \
+            "$pct" "$color" > badge-out/coverage.json
+          cat badge-out/coverage.json
+
+      - name: Publish badge to the badges branch
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: badges
+          folder: badge-out
+          target-folder: .
+          clean: false
+          commit-message: "chore(badges): update coverage badge [skip ci]"
