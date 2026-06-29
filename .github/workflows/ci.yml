@@ -53,7 +53,11 @@ jobs:
         with:
           # Pinned to v1.x: .golangci.yml uses the v1 config schema, which
           # golangci-lint v2 (now resolved by "latest") cannot parse.
+          # Built from source with the runner's Go so the toolchain matches the
+          # go.mod target (the prebuilt v1.64.8 binary ships built with go1.24,
+          # which refuses to run against a go 1.25 target).
           version: v1.64.8
+          install-mode: goinstall
 
   docker:
     name: Docker Build
