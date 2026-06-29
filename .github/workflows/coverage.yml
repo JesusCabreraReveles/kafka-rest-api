@@ -30,8 +30,13 @@ jobs:
 
       - name: Build badge JSON
         run: |
-          pct=$(go tool cover -func=coverage.out | awk '/^total:/ {gsub("%","",$3); print $3}')
-          echo "Total coverage: ${pct}%"
+          # Exclude packages that aren't meaningfully unit-tested from the badge
+          # total: cmd/server is the main/composition root (wiring) and
+          # pkg/logger is a trivial slog constructor. The Kafka adapter is kept
+          # so its (integration-covered) gap stays visible.
+          grep -vE 'kafka-rest-api/(cmd/server|pkg/logger)/' coverage.out > coverage.badge.out
+          pct=$(go tool cover -func=coverage.badge.out | awk '/^total:/ {gsub("%","",$3); print $3}')
+          echo "Badge coverage (excl. main + logger): ${pct}%"
           int=${pct%.*}
           if   [ "$int" -ge 90 ]; then color=brightgreen
           elif [ "$int" -ge 80 ]; then color=green

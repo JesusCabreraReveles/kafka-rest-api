@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Coverage badge total now excludes `cmd/server` (composition root) and
+  `pkg/logger` (trivial), which are not meaningfully unit-tested.
+
 ## [1.1.0] - 2026-06-29
 
 ### Added
