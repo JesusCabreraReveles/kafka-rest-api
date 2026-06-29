@@ -48,7 +48,10 @@ func (rt *Router) Handler() http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(chimw.RequestID)
-	r.Use(chimw.RealIP)
+	// NOTE: chi's RealIP is deliberately not used — it trusts X-Forwarded-For /
+	// X-Real-IP / True-Client-IP unconditionally and is vulnerable to IP
+	// spoofing (GHSA-3fxj-6jh8-hvhx). RemoteAddr is left as the real peer
+	// address; resolve the client IP at a trusted proxy instead if needed.
 	r.Use(middleware.RequestLogger(rt.cfg.Logger))
 	if rt.cfg.MetricsMiddleware != nil {
 		r.Use(rt.cfg.MetricsMiddleware)

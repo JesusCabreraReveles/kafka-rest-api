@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Test JWT signing key is now generated at init time instead of a hardcoded
   literal, so no credential-shaped string is committed.
+- Bumped `github.com/go-chi/chi/v5` to v5.3.0 and CI actions `checkout`/`setup-go`.
+
+### Security
+- Removed chi's `RealIP` middleware: it trusts `X-Forwarded-For` / `X-Real-IP`
+  unconditionally and is vulnerable to IP spoofing (GHSA-3fxj-6jh8-hvhx).
+  `RemoteAddr` is now the real peer address.
 
 ### Fixed
 - CI `push` trigger now targets the `master` branch (was `main`, so it never ran on push).
