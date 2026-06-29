@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"io"
 	"log/slog"
@@ -12,7 +14,18 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-const testSecret = "super-secret-key"
+// testSecret is the HMAC key used to sign JWTs in these tests. It is generated
+// at init time rather than hardcoded, so no credential-shaped literal is
+// committed to the repository.
+var testSecret = newTestSecret()
+
+func newTestSecret() string {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		panic("generate test secret: " + err.Error())
+	}
+	return hex.EncodeToString(b)
+}
 
 func sign(t *testing.T, claims jwt.RegisteredClaims, secret string) string {
 	t.Helper()

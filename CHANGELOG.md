@@ -11,9 +11,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `## Install` and `## Testing` sections in the README.
 - `SECURITY.md` with a coordinated vulnerability disclosure policy.
 - Dependabot configuration (`gomod`, `github-actions`, `docker`).
+- Community health files: `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, issue and
+  pull-request templates, and `CODEOWNERS`.
+
+### Changed
+- Test JWT signing key is now generated at init time instead of a hardcoded
+  literal, so no credential-shaped string is committed.
+- Bumped `github.com/go-chi/chi/v5` to v5.3.0 and CI actions `checkout`/`setup-go`.
+
+### Security
+- Removed chi's `RealIP` middleware: it trusts `X-Forwarded-For` / `X-Real-IP`
+  unconditionally and is vulnerable to IP spoofing (GHSA-3fxj-6jh8-hvhx).
+  `RemoteAddr` is now the real peer address.
 
 ### Fixed
 - CI `push` trigger now targets the `master` branch (was `main`, so it never ran on push).
+- Pinned `golangci-lint` and installed it via `goinstall` so its toolchain
+  matches the `go 1.25` target (the prebuilt v1 binary refused to run).
 
 ## [1.0.0] - 2026-06-29
 

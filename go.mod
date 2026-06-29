@@ -3,7 +3,7 @@ module github.com/JesusCabreraReveles/kafka-rest-api
 go 1.25
 
 require (
-	github.com/go-chi/chi/v5 v5.1.0
+	github.com/go-chi/chi/v5 v5.3.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/prometheus/client_golang v1.23.2
 	github.com/segmentio/kafka-go v0.4.51

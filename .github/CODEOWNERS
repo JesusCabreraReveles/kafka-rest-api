@@ -1,0 +1,12 @@
+# Code owners for this repository.
+# These owners are requested for review on every pull request that touches
+# matching paths. See:
+# https://docs.github.com/en/repositories/managing-your-repos-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything in the repo.
+*       @JesusCabreraReveles
+
+# Build, CI, and project governance.
+/.github/    @JesusCabreraReveles
+/Dockerfile  @JesusCabreraReveles
+/Makefile    @JesusCabreraReveles

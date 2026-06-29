@@ -24,6 +24,12 @@ updates:
       github-actions:
         patterns:
           - "*"
+    ignore:
+      # golangci-lint-action v7+ only supports golangci-lint v2, while this
+      # repo's .golangci.yml uses the v1 config schema. Pin to the v6 line
+      # until the config is migrated to v2.
+      - dependency-name: "golangci/golangci-lint-action"
+        update-types: ["version-update:semver-major"]
 
   # Base images referenced in the Dockerfile
   - package-ecosystem: docker
